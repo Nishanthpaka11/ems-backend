@@ -35,6 +35,13 @@ const staffSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+
+  // 🔹 ADD DATE OF BIRTH HERE
+  dob: {
+    type: Date,
+    default: null
+  },
+
   currentAddress: {
     type: String,
     default: ''

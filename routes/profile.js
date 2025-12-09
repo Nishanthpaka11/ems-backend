@@ -185,8 +185,9 @@ router.get('/employee/:id', authenticate, async (req, res) => {
     }
 
     const employee = await Staff.findById(req.params.id).select(
-      'employee_id name email phone role leave_quota photo department position currentAddress permanentAddress aadhar'
-    );
+  'employee_id name email phone role leave_quota photo department position currentAddress permanentAddress aadhar dob'
+  //                                                            👆 added dob
+);
 
     if (!employee) {
       return res.status(404).json({ message: 'Employee not found' });
@@ -213,7 +214,17 @@ router.put('/employee/:id', authenticate, async (req, res) => {
       return res.status(403).json({ message: 'Access denied. Admin only.' });
     }
 
-    const { name, phone, email, department, position, currentAddress, permanentAddress, aadhar } = req.body;
+    const { 
+      name, 
+      phone, 
+      email, 
+      department, 
+      position, 
+      currentAddress, 
+      permanentAddress, 
+      aadhar,
+      dob                      // ✅ get dob from body
+    } = req.body;
 
     const updatedEmployee = await Staff.findByIdAndUpdate(
       req.params.id,
@@ -225,10 +236,14 @@ router.put('/employee/:id', authenticate, async (req, res) => {
         position,
         currentAddress,
         permanentAddress,
-        aadhar
+        aadhar,
+        dob                    // ✅ save dob
       },
       { new: true, runValidators: true }
-    ).select('employee_id name email phone role leave_quota photo department position currentAddress permanentAddress aadhar');
+    ).select(
+      
+      'employee_id name email phone role leave_quota photo department position currentAddress permanentAddress aadhar dob' // ✅ return dob
+    );
 
     if (!updatedEmployee) {
       return res.status(404).json({ message: 'Employee not found' });
@@ -249,6 +264,7 @@ router.put('/employee/:id', authenticate, async (req, res) => {
     res.status(500).json({ message: 'Server error: ' + err.message });
   }
 });
+
 
 // ✅ UPLOAD employee photo (for admin)
 router.post('/employee/:id/upload-photo', authenticate, profilePhotoUpload.single('photo'), async (req, res) => {

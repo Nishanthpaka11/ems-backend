@@ -31,7 +31,8 @@ router.post('/', authenticate, isAdmin, async (req, res) => {
       currentAddress,
       permanentAddress,
       aadhar,
-      leave_quota
+      leave_quota,
+      dob                // 🔹 DOB coming from frontend (YYYY-MM-DD)
     } = req.body;
 
     // Validation
@@ -75,7 +76,8 @@ router.post('/', authenticate, isAdmin, async (req, res) => {
       permanentAddress: permanentAddress || '',
       aadhar: aadhar || null,
       leave_quota: leave_quota || 12,
-      photo: null
+      photo: null,
+      dob: dob ? new Date(dob) : null      // 🔹 save DOB into schema
     });
 
     await newEmployee.save();
@@ -91,7 +93,8 @@ router.post('/', authenticate, isAdmin, async (req, res) => {
         email: newEmployee.email,
         role: newEmployee.role,
         department: newEmployee.department,
-        position: newEmployee.position
+        position: newEmployee.position,
+        dob: newEmployee.dob               // 🔹 optionally return dob too
       }
     });
   } catch (err) {
@@ -169,7 +172,8 @@ router.put('/:id', authenticate, isAdmin, async (req, res) => {
       currentAddress,
       permanentAddress,
       aadhar,
-      leave_quota
+      leave_quota,
+      dob                     // 🔹 allow updating DOB
     } = req.body;
 
     // Check if email is being changed and if it already exists
@@ -186,21 +190,29 @@ router.put('/:id', authenticate, isAdmin, async (req, res) => {
       }
     }
 
+    // Build update payload
+    const updatePayload = {
+      name,
+      email,
+      phone,
+      role,
+      department,
+      position,
+      currentAddress,
+      permanentAddress,
+      aadhar,
+      leave_quota
+    };
+
+    // Only set dob if it is provided in request
+    if (typeof dob !== 'undefined') {
+      updatePayload.dob = dob ? new Date(dob) : null;   // 🔹 update DOB
+    }
+
     // Update employee
     const updatedEmployee = await Staff.findByIdAndUpdate(
       req.params.id,
-      {
-        name,
-        email,
-        phone,
-        role,
-        department,
-        position,
-        currentAddress,
-        permanentAddress,
-        aadhar,
-        leave_quota
-      },
+      updatePayload,
       { new: true, runValidators: true }
     ).select('-password');
 
