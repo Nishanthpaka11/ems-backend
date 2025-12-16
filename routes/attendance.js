@@ -260,7 +260,6 @@ router.get('/monthly-summary', authenticate, async (req, res) => {
       {
         $match: {
           punch_in_time: { $exists: true },
-          punch_out_time: { $exists: true },
           date: { $type: "date" }
         }
       },

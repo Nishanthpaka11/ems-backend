@@ -6,7 +6,7 @@ function countWeekdaysInMonth(year, monthIndex) {
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, monthIndex, day);
     const dayOfWeek = date.getDay();
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) { // 0 = Sunday, 6 = Saturday
+    if (dayOfWeek !== 0) { // 0 = Sunday, Saturday is now a working day
       weekdays++;
     }
   }

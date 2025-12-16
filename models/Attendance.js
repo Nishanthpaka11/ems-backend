@@ -10,14 +10,13 @@ const attendanceSchema = new mongoose.Schema({
     type: String, // ✅ NEW FIELD
     required: true
   },
- date: {
-  type: Date,
-  required: true
-},
+  date: {
+    type: Date,
+    required: true
+  },
   punch_in_time: Date,
   punch_out_time: Date,
   ip: String,
-  photo_path: String
 }, { collection: 'attendance' });
 
 module.exports = mongoose.model('Attendance', attendanceSchema);
