@@ -29,8 +29,8 @@ const normalizeIP = (ip = '') =>
 
 // ================= Attendance Routes =================
 
-// ✅ Punch In / Out
-router.post('/punch', authenticate, upload.single('photo'), checkOfficeIP, async (req, res) => {
+// ✅ Punch In / Out (Photo logic removed)
+router.post('/punch', authenticate, upload.any(), checkOfficeIP, async (req, res) => {
   const empId = req.user._id;
   const empCode = req.user.employee_id;
   const now = new Date();
@@ -45,7 +45,7 @@ router.post('/punch', authenticate, upload.single('photo'), checkOfficeIP, async
   const localIPFromClient = req.body?.localIP || '';
   const primaryIP = normalizeIP(forwarded.split(',')[0] || remote);
   const normalizedLocalIP = normalizeIP(localIPFromClient);
-  const photoPath = req.file?.path?.replace(/\\/g, '/') || '';
+  // const photoPath = req.file?.path?.replace(/\\/g, '/') || ''; // ❌ Photo logic removed
 
   try {
     let record = await Attendance.findOne({
@@ -94,7 +94,7 @@ router.post('/punch', authenticate, upload.single('photo'), checkOfficeIP, async
         date: now,
         punch_in_time: now,
         ip: primaryIP,
-        photo_path: photoPath,
+        // photo_path: photoPath, // ❌ logic removed
       });
 
       return res.json({ message: '✅ Punch In successful', type: 'in' });
@@ -125,7 +125,7 @@ router.post('/punch', authenticate, upload.single('photo'), checkOfficeIP, async
 
       record.punch_out_time = now;
       record.ip = primaryIP;
-      if (photoPath) record.photo_path = photoPath;
+      // if (photoPath) record.photo_path = photoPath; // ❌ logic removed
       await record.save();
 
       return res.json({ message: '✅ Punch Out successful', type: 'out' });
