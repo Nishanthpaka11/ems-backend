@@ -1,13 +1,17 @@
-// middleware/auth.js
 const jwt = require('jsonwebtoken');
 const Staff = require('../models/Staff');
 require('dotenv').config();
 
 module.exports = async (req, res, next) => {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    if (!token) return res.status(401).json({ message: 'Unauthorized: Token missing' });
+    const authHeader =
+      req.headers.authorization || req.headers.Authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Unauthorized: Token missing' });
+    }
+
+    const token = authHeader.split(' ')[1];
 
     let decoded;
     try {
@@ -17,9 +21,13 @@ module.exports = async (req, res, next) => {
       return res.status(403).json({ message: 'Invalid or expired token' });
     }
 
-    // ✅ use decoded.id (not decoded._id)
-    const staff = await Staff.findById(decoded.id).select('_id employee_id name email role');
-    if (!staff) return res.status(401).json({ message: 'Unauthorized: User not found' });
+    const staff = await Staff.findById(decoded.id).select(
+      '_id employee_id name email role'
+    );
+
+    if (!staff) {
+      return res.status(401).json({ message: 'Unauthorized: User not found' });
+    }
 
     req.user = {
       _id: staff._id,
@@ -27,12 +35,12 @@ module.exports = async (req, res, next) => {
       employee_id: staff.employee_id,
       name: staff.name,
       email: staff.email,
-      role: staff.role
+      role: staff.role,
     };
 
     next();
   } catch (err) {
     console.error('❌ Auth Middleware Error:', err.message);
-    res.status(500).json({ message: 'Internal server error during authentication' });
+    res.status(500).json({ message: 'Authentication failed' });
   }
 };

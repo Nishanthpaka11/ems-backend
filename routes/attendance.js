@@ -53,9 +53,7 @@ router.post('/punch', authenticate, upload.single('photo'), checkOfficeIP, async
     });
 
     if (!record) {
-      if (!photoPath) {
-        return res.status(400).json({ message: 'Photo is required for Punch In.' });
-      }
+      
 
       await Attendance.create({
         employee_ref: empId,
@@ -113,6 +111,26 @@ router.get('/status', authenticate, async (req, res) => {
     res.status(500).json({ message: 'Unable to fetch punch status' });
   }
 });
+
+router.get('/history', authenticate, async (req, res) => {
+  try {
+    const records = await Attendance.find({
+      employee_ref: req.user._id,
+      punch_in_time: { $exists: true }
+    }).select('date punch_in_time').lean();
+
+    const formatted = records.map(r => ({
+      date: r.date,
+      punched_in: true
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    console.error('Attendance history error:', err.message);
+    res.status(200).json([]); // ✅ NEVER return 500 here
+  }
+});
+
 
 // ✅ CSV Export
 router.get('/export', authenticate, async (req, res) => {
