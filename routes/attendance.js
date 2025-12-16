@@ -11,6 +11,7 @@ const checkOfficeIP = require('../middleware/checkOfficeIP');
 const Attendance = require('../models/Attendance');
 const Staff = require('../models/Staff');
 const Task = require('../models/Task'); // ✅ New model for tasks
+const AdminSettings = require('../models/AdminSettings'); // ✅ Admin Settings for Strict Attendance
 
 // ================= Multer setup =================
 const storage = multer.diskStorage({
@@ -53,7 +54,39 @@ router.post('/punch', authenticate, upload.single('photo'), checkOfficeIP, async
     });
 
     if (!record) {
-      
+
+
+      // 🕒 STRICT TIME ENFORCEMENT
+      const settings = await AdminSettings.findOne();
+
+      console.log('--- DEBUG PUNCH START ---');
+      console.log('Current Server Time:', now);
+      console.log('Settings:', settings);
+
+      if (settings) {
+        const currentTime = now.getHours() * 60 + now.getMinutes(); // Minutes from midnight
+        console.log('Current Time (mins):', currentTime);
+
+        // 1. Check Start Time (Must punch in BEFORE start time)
+        if (settings.working_hours_start) {
+          const [startH, startM] = settings.working_hours_start.split(':').map(Number);
+          const startTimeInMins = startH * 60 + startM;
+          console.log('Start Time (mins):', startTimeInMins);
+
+          if (currentTime > startTimeInMins) {
+            console.log('❌ Late punch detected! Blocking.');
+            return res.status(400).json({
+              message: `⚠️ Late punch-in allowed only before ${settings.working_hours_start}.`,
+            });
+          } else {
+            console.log('✅ Punch time is within limit.');
+          }
+        } else {
+          console.log('⚠️ No working_hours_start found in settings.');
+        }
+      } else {
+        console.log('⚠️ No AdminSettings found.');
+      }
 
       await Attendance.create({
         employee_ref: empId,
@@ -73,6 +106,21 @@ router.post('/punch', authenticate, upload.single('photo'), checkOfficeIP, async
         return res.status(400).json({
           message: '⚠️ You can only punch out after 1 hour from punch in.',
         });
+      }
+
+      // 🕒 STRICT TIME ENFORCEMENT FOR PUNCH OUT
+      const settingsForOut = await AdminSettings.findOne();
+
+      if (settingsForOut && settingsForOut.working_hours_end) {
+        const currentTime = now.getHours() * 60 + now.getMinutes();
+        const [endH, endM] = settingsForOut.working_hours_end.split(':').map(Number);
+        const endTimeInMins = endH * 60 + endM;
+
+        if (currentTime < endTimeInMins) {
+          return res.status(400).json({
+            message: `⚠️ Early punch-out allowed only after ${settingsForOut.working_hours_end}.`,
+          });
+        }
       }
 
       record.punch_out_time = now;
