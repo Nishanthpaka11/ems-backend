@@ -45,7 +45,7 @@ router.get('/analytics', authenticate, async (req, res) => {
             _id: null,
             total_tasks: { $sum: 1 },
             completed_tasks: {
-              $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] }
+              $sum: { $cond: [{ $eq: [{ $toLower: '$status' }, 'completed'] }, 1, 0] }
             }
           }
         }
