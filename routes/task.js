@@ -92,6 +92,24 @@ router.get('/all', authenticate, async (req, res) => {
   }
 });
 
+// ✅ Admin: Delete a task
+router.delete('/:id', authenticate, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Admins only' });
+  }
+
+  try {
+    const task = await Task.findById(req.params.id);
+    if (!task) return res.status(404).json({ message: 'Task not found' });
+
+    await Task.deleteOne({ _id: req.params.id });
+    res.json({ message: 'Task deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting task:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
 // ✅ Allow admin to assign task to any employee
 router.post('/', authenticate, async (req, res) => {
