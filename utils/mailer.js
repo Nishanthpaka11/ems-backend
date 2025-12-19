@@ -4,7 +4,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendOTP = async (to, otp) => {
   return resend.emails.send({
-    from: 'ISAR <onboarding@resend.dev>',
+    from: 'ISAR <noreply@isaar.in>', // ✅ FIXED
     to,
     subject: 'Your OTP for Password Reset',
     html: `
@@ -17,3 +17,4 @@ const sendOTP = async (to, otp) => {
 };
 
 module.exports = sendOTP;
+
