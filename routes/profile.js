@@ -223,7 +223,8 @@ router.put('/employee/:id', authenticate, async (req, res) => {
       currentAddress, 
       permanentAddress, 
       aadhar,
-      dob                      // ✅ get dob from body
+      dob ,
+      role                     // ✅ get dob from body
     } = req.body;
 
     const updatedEmployee = await Staff.findByIdAndUpdate(
@@ -237,7 +238,8 @@ router.put('/employee/:id', authenticate, async (req, res) => {
         currentAddress,
         permanentAddress,
         aadhar,
-        dob                    // ✅ save dob
+        dob ,
+        role                   // ✅ save dob
       },
       { new: true, runValidators: true }
     ).select(
@@ -297,6 +299,7 @@ router.post('/employee/:id/upload-photo', authenticate, profilePhotoUpload.singl
         }
       }
     }
+    
 
     // Save new photo path
     const photoPath = `/uploads/profile-photos/${req.file.filename}`;
@@ -320,6 +323,7 @@ router.post('/employee/:id/upload-photo', authenticate, profilePhotoUpload.singl
     res.status(500).json({ message: 'Server error: ' + err.message });
   }
 });
+
 
 // ✅ DELETE employee photo (for admin)
 router.delete('/employee/:id/delete-photo', authenticate, async (req, res) => {

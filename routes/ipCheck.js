@@ -45,10 +45,16 @@ router.get('/device-ips/:userId', authenticate, async (req, res) => {
 
 // ✅ Get client’s current normalized IP
 router.get('/client-ip', (req, res) => {
-  const rawIp =
-    req.headers['x-forwarded-for'] || req.connection.remoteAddress || '';
+  const forwarded = req.headers['x-forwarded-for'];
+
+  // ✅ Take ONLY the first IP
+  const rawIp = forwarded
+    ? forwarded.split(',')[0].trim()
+    : req.socket.remoteAddress || '';
+
   const ip = normalizeIP(rawIp);
   res.json({ ip });
 });
+
 
 module.exports = router;
