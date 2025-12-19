@@ -3,16 +3,16 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const Staff = require('../models/Staff');
-const sendOTP = require('../utils/mailer'); // ✅ updated file name
+const sendOTP = require('../utils/mailer'); // Resend-based mailer
 
-// In-memory OTP store — replace with DB/Redis in production
+// In-memory OTP store (email -> { otp, expiresAt })
 const otpStore = new Map();
 
 // 🔑 Normalize IP utility
 const normalizeIP = (ip = '') =>
   ip.replace('::ffff:', '').replace('::1', '127.0.0.1').trim();
 
-// ✅ LOGIN ROUTE
+/* ===================== LOGIN ===================== */
 router.post('/login', async (req, res) => {
   const { employee_id, password } = req.body;
 
@@ -45,12 +45,12 @@ router.post('/login', async (req, res) => {
       clientIP,
     });
   } catch (err) {
-    console.error('❌ Login error:', err.message);
+    console.error('❌ Login error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// ✅ REQUEST OTP (for password reset)
+/* ===================== REQUEST OTP ===================== */
 router.post('/request-otp', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ message: 'Email is required' });
@@ -60,19 +60,27 @@ router.post('/request-otp', async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    otpStore.set(email, otp);
 
-    await sendOTP(email, otp); // ✅ using mailer.js
-    console.log(`📩 OTP sent to ${email}: ${otp}`);
+    otpStore.set(email, {
+      otp,
+      expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
+    });
+
+    await sendOTP(email, otp); // 🔥 Resend (HTTPS, Render-safe)
 
     res.json({ message: 'OTP sent to your email' });
+
   } catch (err) {
-    console.error('❌ OTP send error:', err.message);
-    res.status(500).json({ message: 'Failed to send OTP' });
+    console.error('❌ OTP send error:', err);
+
+    // 🔥 important: external email service failure
+    res.status(503).json({
+      message: 'Email service unavailable. Please try again.',
+    });
   }
 });
 
-// ✅ VERIFY OTP & CHANGE PASSWORD
+/* ===================== VERIFY OTP & CHANGE PASSWORD ===================== */
 router.post('/verify-otp-change-password', async (req, res) => {
   const { email, otp, newPassword } = req.body;
 
@@ -80,8 +88,9 @@ router.post('/verify-otp-change-password', async (req, res) => {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
-  const storedOtp = otpStore.get(email);
-  if (!storedOtp || storedOtp !== otp) {
+  const record = otpStore.get(email);
+
+  if (!record || record.otp !== otp || record.expiresAt < Date.now()) {
     return res.status(400).json({ message: 'Invalid or expired OTP' });
   }
 
@@ -89,11 +98,11 @@ router.post('/verify-otp-change-password', async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await Staff.findOneAndUpdate({ email }, { password: hashedPassword });
 
-    otpStore.delete(email);
+    otpStore.delete(email); // cleanup
 
     res.json({ message: 'Password changed successfully' });
   } catch (err) {
-    console.error('❌ Password change error:', err.message);
+    console.error('❌ Password change error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
