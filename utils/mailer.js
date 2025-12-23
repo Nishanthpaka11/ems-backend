@@ -17,3 +17,4 @@ const sendOTP = async (to, otp) => {
 };
 
 module.exports = sendOTP;
+
