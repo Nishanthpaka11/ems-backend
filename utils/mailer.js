@@ -1,22 +1,19 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendOTP = async (to, otp) => {
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
+  return resend.emails.send({
+    from: 'ISAR <it001@isaar.in>', // ✅ FIXED
     to,
     subject: 'Your OTP for Password Reset',
-    text: `Your OTP is: ${otp}. It will expire in 5 minutes.`,
-  };
-
-  await transporter.sendMail(mailOptions);
+    html: `
+      <h2>Password Reset OTP</h2>
+      <p>Your OTP is:</p>
+      <h1>${otp}</h1>
+      <p>This OTP expires in 5 minutes.</p>
+    `,
+  });
 };
 
 module.exports = sendOTP;
